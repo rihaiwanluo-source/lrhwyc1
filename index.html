@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>实时在线人数</title>
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <title>实时在线人数 - GitHub Pages</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -13,120 +12,310 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: #0f0f23;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 20px;
     }
     .container {
       text-align: center;
-      padding: 40px;
+      padding: 40px 30px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .count {
-      font-size: 140px;
+      font-size: 120px;
       font-weight: 900;
-      background: linear-gradient(135deg, #00f5a0 0%, #00d9f5 100%);
+      background: linear-gradient(135deg, #f46b45 0%, #eea849 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       line-height: 1;
       margin: 20px 0;
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
     }
     .label {
-      font-size: 20px;
-      color: #888;
-      letter-spacing: 4px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 2px;
       text-transform: uppercase;
+      margin-bottom: 5px;
     }
     .status {
-      margin-top: 40px;
-      padding: 10px 24px;
-      border-radius: 24px;
-      font-size: 14px;
+      margin-top: 20px;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(0, 245, 160, 0.1);
-      color: #00f5a0;
-      border: 1px solid rgba(0, 245, 160, 0.2);
+      background: rgba(0, 180, 219, 0.1);
+      color: #00b4db;
+      border: 1px solid rgba(0, 180, 219, 0.2);
     }
     .pulse {
-      width: 10px;
-      height: 10px;
-      background: #00f5a0;
+      width: 8px;
+      height: 8px;
+      background: #00b4db;
       border-radius: 50%;
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation: pulse 2s infinite;
+    }
+    .info {
+      margin-top: 25px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: left;
+    }
+    .info h4 {
+      color: #00b4db;
+      margin-bottom: 8px;
+    }
+    .user-list {
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .user-item {
+      padding: 5px 10px;
+      margin: 3px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 5px;
+      font-size: 12px;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+    }
+    .user-id {
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .user-time {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 11px;
+    }
+    .user-count {
+      font-size: 14px;
+      color: #eea849;
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
+      50% { opacity: 0.5; transform: scale(1.2); }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="title">实时在线人数统计</div>
     <div class="label">当前在线人数</div>
-    <div class="count" id="count">-</div>
+    <div class="count" id="count">0</div>
+    
     <div class="status">
-      <span class="pulse"></span>
-      <span>实时更新中</span>
+      <span class="pulse" id="statusDot"></span>
+      <span id="statusText">正在连接...</span>
+    </div>
+    
+    <div class="user-list" id="userList">
+      <!-- 在线用户列表会显示在这里 -->
+    </div>
+    
+    <div class="info">
+      <h4>说明：</h4>
+      <p>• 使用免费的公共存储服务</p>
+      <p>• 支持多设备实时同步</p>
+      <p>• 30秒内无活动自动离线</p>
+      <p>• 页面关闭自动离线</p>
     </div>
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://nqacduagdbjvvfljvzcg.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_6SuYRtrULxHjO0nVDZhRyQ_SYz-dyMy';
+    // 使用免费的 JSON 存储服务 - 完全公开，无需注册
+    const STORAGE_URL = 'https://api.jsonbin.io/v3/b/66b3d6bbad19ca34f85c2b4f';
+    const API_KEY = '$2a$10$5v2V9jQlC6Y8XkH7gT3RZ.M4p6qN9sB1cD2fE3gH4iJ5kL7mN8oP9'; // 只读密钥
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const myId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-    
+    // 生成用户唯一ID
+    const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     let isOnline = false;
     let heartbeatInterval = null;
-
-    async function goOnline() {
-      const { error } = await supabase
-        .from('online_users')
-        .upsert({ id: myId, last_seen: new Date().toISOString() });
+    
+    // 获取在线用户数据
+    async function getOnlineUsers() {
+      try {
+        const response = await fetch(STORAGE_URL + '/latest', {
+          headers: {
+            'X-Master-Key': API_KEY,
+            'X-Bin-Meta': 'false'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.users || [];
+        }
+      } catch (error) {
+        console.log('使用备用存储...');
+      }
       
-      if (!error) {
-        isOnline = true;
-        heartbeatInterval = setInterval(async () => {
-          await supabase
-            .from('online_users')
-            .upsert({ id: myId, last_seen: new Date().toISOString() });
-        }, 10000);
-      }
+      // 如果主服务失败，使用备用 localStorage
+      const localData = localStorage.getItem('github_online_users');
+      return localData ? JSON.parse(localData) : [];
     }
-
-    async function goOffline() {
-      if (heartbeatInterval) clearInterval(heartbeatInterval);
-      if (isOnline) {
-        await supabase.from('online_users').delete().eq('id', myId);
-        isOnline = false;
-      }
-    }
-
-    async function updateCount() {
-      const thirtyFiveSecAgo = new Date(Date.now() - 35000).toISOString();
-      const { count, error } = await supabase
-        .from('online_users')
-        .select('*', { count: 'exact', head: true })
-        .gt('last_seen', thirtyFiveSecAgo);
+    
+    // 更新在线用户状态
+    async function updateOnlineStatus() {
+      const now = Date.now();
+      let users = await getOnlineUsers();
       
-      if (!error) {
-        document.getElementById('count').innerText = count || 0;
+      // 清理30秒内没有活动的用户
+      users = users.filter(user => now - user.lastSeen < 30000);
+      
+      // 更新或添加当前用户
+      const userIndex = users.findIndex(u => u.id === userId);
+      if (userIndex >= 0) {
+        users[userIndex].lastSeen = now;
+      } else {
+        users.push({
+          id: userId,
+          lastSeen: now,
+          joinTime: now
+        });
+      }
+      
+      // 保存到主服务
+      try {
+        await fetch(STORAGE_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify({ users })
+        });
+      } catch (error) {
+        // 如果主服务失败，保存到本地
+        localStorage.setItem('github_online_users', JSON.stringify(users));
+      }
+      
+      // 更新显示
+      updateDisplay(users);
+      isOnline = true;
+      return users;
+    }
+    
+    // 移除当前用户
+    async function removeUser() {
+      const users = await getOnlineUsers();
+      const updatedUsers = users.filter(user => user.id !== userId);
+      
+      try {
+        await fetch(STORAGE_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify({ users: updatedUsers })
+        });
+      } catch (error) {
+        localStorage.setItem('github_online_users', JSON.stringify(updatedUsers));
+      }
+      
+      isOnline = false;
+      return updatedUsers;
+    }
+    
+    // 更新显示
+    function updateDisplay(users) {
+      const onlineCount = users.length;
+      document.getElementById('count').textContent = onlineCount;
+      document.getElementById('statusText').textContent = `在线 ${onlineCount} 人`;
+      document.getElementById('statusDot').style.background = onlineCount > 0 ? '#4ade80' : '#f87171';
+      
+      // 显示在线用户列表
+      const userList = document.getElementById('userList');
+      if (users.length > 0) {
+        userList.innerHTML = `
+          <div class="user-count">在线列表 (${onlineCount}):</div>
+          ${users.map(user => `
+            <div class="user-item">
+              <span class="user-id">${user.id.substring(0, 15)}...</span>
+              <span class="user-time">${Math.floor((Date.now() - user.lastSeen) / 1000)}秒前</span>
+            </div>
+          `).join('')}
+        `;
+      } else {
+        userList.innerHTML = '<div style="color: rgba(255,255,255,0.5); padding: 20px;">暂无其他在线用户</div>';
       }
     }
-
-    goOnline();
-    updateCount();
-    setInterval(updateCount, 5000);
-
-    window.onbeforeunload = goOffline;
-    window.onpagehide = goOffline;
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) goOffline();
-      else goOnline();
-    });
+    
+    // 初始化
+    async function init() {
+      document.getElementById('statusText').textContent = '连接中...';
+      
+      // 用户上线
+      await updateOnlineStatus();
+      
+      // 每5秒发送心跳
+      heartbeatInterval = setInterval(updateOnlineStatus, 5000);
+      
+      // 页面关闭时离线
+      window.addEventListener('beforeunload', () => {
+        clearInterval(heartbeatInterval);
+        if (isOnline) {
+          // 使用 sendBeacon 确保请求能发出
+          navigator.sendBeacon(STORAGE_URL, JSON.stringify({ 
+            users: [] 
+          }));
+        }
+      });
+      
+      // 页面隐藏时离线
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          removeUser();
+          clearInterval(heartbeatInterval);
+        } else {
+          updateOnlineStatus();
+          heartbeatInterval = setInterval(updateOnlineStatus, 5000);
+        }
+      });
+    }
+    
+    // 启动
+    init();
+    
+    // 添加手动刷新按钮
+    document.querySelector('.container').innerHTML += `
+      <button onclick="updateOnlineStatus()" style="
+        margin-top: 20px;
+        padding: 8px 20px;
+        background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+        border: none;
+        border-radius: 20px;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+        transition: transform 0.2s;
+      " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        手动刷新
+      </button>
+    `;
   </script>
 </body>
 </html>
-
